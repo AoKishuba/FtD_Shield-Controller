@@ -1,0 +1,102 @@
+-- Shield Controller
+
+function Update(I)
+
+  -- count shields
+    shieldCount = I:Component_GetCount(10)
+    shieldZeroIndex = shieldCount - 1
+
+  -- sort shields by direction
+    -- directional arrays (for indices)
+      forward = {}
+      backward = {}
+      left = {}
+      right = {}
+
+    -- convert quaternion to vector3
+      for i = 0, shieldZeroIndex do
+        rotationQuaternion = I:Component_GetBlockInfo(10,i).LocalRotation
+        rotationVector = rotationQuaternion.eulerAngles
+
+      -- y vector shows bearing in positive degrees
+      -- forward is 0, right is 90
+
+      -- append projector index to directional array
+        if rotationVector.y == 0 then
+          forward[#forward + 1] = i
+        elseif rotationVector.y == 90 then
+          right[#right + 1] = i
+        elseif rotationVector.y == 180 then
+          backward[#backward + 1] = i
+        elseif rotationVector.y == 270 then
+          left[#left + 1] = i
+        end
+      end
+
+
+  -- Get target bearing (adapted from kelly Rocket on the Discord)
+    position = I:GetConstructPosition()
+    aimpoint = I:GetTargetInfo(0, 0).AimPointPosition
+    heading = I:GetConstructForwardVector()
+
+    direction = aimpoint - position
+
+    targetBearing = Vector3.SignedAngle(heading, direction, Vector3.up)
+    -- Result is inverted (like breadboard orientation)
+      targetBearing = -targetBearing
+
+
+  -- activate shields which face the enemy
+    -- Forward shield
+      if targetBearing > -90 and targetBearing < 90 then
+        for i = 1, #forward do
+          I:Component_SetFloatLogic(10,forward[i],10)
+        end
+      else
+        for i = 1, #forward do
+          I:Component_SetFloatLogic(10,forward[i],0)
+        end
+      end
+
+    -- Right shield
+      if targetBearing < 0 then
+        for i = 1, #right do
+          I:Component_SetFloatLogic(10,right[i],10)
+        end
+      else
+        for i = 1, #right do
+          I:Component_SetFloatLogic(10,right[i],0)
+        end
+      end
+
+    -- Backward shield
+      if Mathf.Abs(targetBearing) > 90 then
+        for i = 1, #backward do
+          I:Component_SetFloatLogic(10,backward[i],10)
+        end
+      else
+        for i = 1, #backward do
+          I:Component_SetFloatLogic(10,backward[i],0)
+        end
+      end
+
+    -- Left shield
+      if targetBearing > 0 and targetBearing < 180 then
+        for i = 1, #left do
+          I:Component_SetFloatLogic(10,left[i],10)
+        end
+      else
+        for i = 1, #left do
+          I:Component_SetFloatLogic(10,left[i],0)
+        end
+      end
+
+  -- targetInfo block returns phony bearing if no target is present
+  -- turn shields off if number of actual targets is 0
+    if I:GetNumberOfTargets(0) == 0 then
+      for i = 0, shieldZeroIndex do
+        I:Component_SetFloatLogic(10,i,0)
+      end
+    end
+
+end
