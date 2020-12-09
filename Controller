@@ -1,4 +1,6 @@
 -- Shield Controller
+-- WARNING: "Stop Running" this script before deleting any projectors in Build Mode
+-- Otherwise the vehicle will freeze.  This is only an issue when deleting in Build Mode
 
 function Update(I)
 
